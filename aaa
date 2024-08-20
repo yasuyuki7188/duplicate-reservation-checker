@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>重複予約確認ツール</title>
+</head>
+<body>
+    <h1>重複予約確認ツール</h1>
+    <input type="file" id="csvFile" accept=".csv" />
+    <br><br>
+    <label for="datePicker">日付を選択してください:</label>
+    <input type="date" id="datePicker" />
+    <br><br>
+    <button onclick="checkDuplicates()">重複予約を確認</button>
+    <br><br>
+    <h2>重複予約リスト</h2>
+    <table id="resultsTable" border="1">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>姓</th>
+                <th>名</th>
+                <th>予約日</th>
+                <th>重複回数</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <script>
+        let csvData = [];
+
+        document.getElementById('csvFile').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            Papa.parse(file, {
+                header: true,
+                complete: function(results) {
+                    csvData = results.data;
+                    alert("CSVファイルがアップロードされました。");
+                }
+            });
+        });
+
+        function checkDuplicates() {
+            const selectedDate = document.getElementById('datePicker').value;
+            if (!selectedDate) {
+                alert("日付を選択してください。");
+                return;
+            }
+
+            const results = {};
+            csvData.forEach(row => {
+                if (row['予約開始日時'].startsWith(selectedDate)) {
+                    const id = row['ID'];
+                    if (results[id]) {
+                        results[id].count += 1;
+                    } else {
+                        results[id] = {
+                            id: id,
+                            姓: row['姓'],
+                            名: row['名'],
+                            予約日: selectedDate,
+                            count: 1
+                        };
+                    }
+                }
+            });
+
+            displayResults(results);
+        }
+
+        function displayResults(results) {
+            const tableBody = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
+            tableBody.innerHTML = ''; // Clear previous results
+
+            Object.values(results).forEach(row => {
+                if (row.count > 1) {
+                    const newRow = tableBody.insertRow();
+                    newRow.insertCell(0).innerText = row.id;
+                    newRow.insertCell(1).innerText = row.姓;
+                    newRow.insertCell(2).innerText = row.名;
+                    newRow.insertCell(3).innerText = row.予約日;
+                    newRow.insertCell(4).innerText = row.count;
+                }
+            });
+        }
+    </script>
+</body>
+</html>
